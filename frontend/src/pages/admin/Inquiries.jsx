@@ -1,0 +1,13 @@
+import { useEffect, useState } from 'react'
+import { Mail, CheckCircle } from 'lucide-react'
+import api from '../../services/api'
+import { Empty, Skeleton } from '../../components/common/index'
+import toast from 'react-hot-toast'
+
+export default function Inquiries() {
+  const [items, setItems] = useState([]); const [loading, setLoading] = useState(true)
+  const load = () => api.get('/inquiries').then(({ data }) => setItems(data.data)).finally(() => setLoading(false))
+  useEffect(() => { load() }, [])
+  const update = async (id, status) => { try { await api.put(`/inquiries/${id}/status`, { status }); toast.success('Inquiry updated'); load() } catch {} }
+  return <div className="space-y-5"><div><h1 className="text-xl font-bold text-slate-800 dark:text-white">Public inquiries</h1><p className="text-sm text-slate-400">Messages received from the public contact page</p></div><div className="card overflow-hidden"><table className="w-full"><thead className="bg-slate-50 dark:bg-dark-800 border-b border-slate-100 dark:border-dark-600"><tr>{['Sender','Subject & message','Received','Status','Action'].map(h => <th key={h} className="table-header py-3 px-4 text-left">{h}</th>)}</tr></thead><tbody className="divide-y divide-slate-50 dark:divide-dark-600">{loading ? Array.from({ length: 4 }, (_, i) => <tr key={i}><td colSpan="5" className="p-4"><Skeleton lines={1}/></td></tr>) : !items.length ? <tr><td colSpan="5"><Empty title="No public inquiries" icon={Mail}/></td></tr> : items.map(item => <tr key={item._id} className="align-top hover:bg-slate-50 dark:hover:bg-dark-600/40"><td className="table-cell"><p className="font-medium text-sm">{item.name}</p><a className="text-xs text-violet-600" href={`mailto:${item.email}`}>{item.email}</a>{item.phone && <p className="text-xs text-slate-400 mt-1">{item.phone}</p>}</td><td className="table-cell max-w-md"><p className="font-medium text-sm">{item.subject}</p><p className="text-sm text-slate-500 mt-1 whitespace-pre-wrap">{item.message}</p></td><td className="table-cell text-xs text-slate-400 whitespace-nowrap">{new Date(item.createdAt).toLocaleString()}</td><td className="table-cell"><span className="badge-slate capitalize">{item.status.replace('_', ' ')}</span></td><td className="table-cell"><select value={item.status} onChange={e => update(item._id, e.target.value)} className="input py-1 text-xs min-w-28"><option value="new">New</option><option value="in_progress">In progress</option><option value="resolved">Resolved</option><option value="spam">Spam</option></select>{item.status === 'resolved' && <CheckCircle className="inline ml-2 text-emerald-500" size={15}/>}</td></tr>)}</tbody></table></div></div>
+}
