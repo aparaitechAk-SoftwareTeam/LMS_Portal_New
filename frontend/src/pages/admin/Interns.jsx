@@ -10,6 +10,11 @@ import { Link } from 'react-router-dom'
 
 const DEPTS = ['Frontend','Backend','Full Stack','Mobile','DevOps','Data Science','UI/UX','QA','Cloud','Cybersecurity']
 const STACKS = ['React','Node.js','Python','Flutter','Angular','Vue','MongoDB','PostgreSQL','AWS','Docker','Kotlin','Swift']
+const INTERNSHIP_PLANS = {
+  '1 Month Internship': 3000,
+  '2 Month Internship': 5000,
+  '3 Month Internship': 6000,
+}
 
 export default function Students() {
   const [interns, setInterns]       = useState([])
@@ -18,7 +23,7 @@ export default function Students() {
   const [filters, setFilters]       = useState({ status:'', department:'', search:'' })
   const [createModal, setCreateModal] = useState(false)
   const [saving, setSaving]         = useState(false)
-  const { register, handleSubmit, reset, formState:{ errors } } = useForm()
+  const { register, handleSubmit, reset, setValue, formState:{ errors } } = useForm()
 
   const fetchInterns = useCallback(async (page=1) => {
     setLoading(true)
@@ -45,6 +50,9 @@ export default function Students() {
         internshipStart: formData.internshipStart,
         internshipEnd: formData.internshipEnd,
         mentor: formData.mentor,
+        internshipPlan: formData.internshipPlan,
+        internshipFee: Number(formData.internshipFee || 0),
+        paymentStatus: formData.paymentStatus,
       }
       await api.post('/interns', payload)
       toast.success('Student account created & welcome email sent!')
@@ -104,7 +112,7 @@ export default function Students() {
           <table className="w-full">
             <thead className="bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-800">
               <tr>
-                {['Student','ID','Department','Tech Stack','Duration','Status','Score','Actions'].map(h => (
+                {['Student','ID','Department','Tech Stack','Duration / Fee','Status','Score','Actions'].map(h => (
                   <th key={h} className="table-header py-3 px-4 text-left whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -149,7 +157,7 @@ export default function Students() {
                           {intern.techStack?.length > 2 && <span className="text-xs text-zinc-400">+{intern.techStack.length-2}</span>}
                         </div>
                       </td>
-                      <td className="table-cell text-xs text-zinc-500 whitespace-nowrap">{intern.internshipDuration||'—'}</td>
+                      <td className="table-cell text-xs whitespace-nowrap"><p className="text-zinc-600 dark:text-zinc-300">{intern.internshipDuration||'—'}</p><p className="mt-0.5 font-semibold text-emerald-600">₹{Number(intern.internshipFee || 0).toLocaleString('en-IN')}</p></td>
                       <td className="table-cell"><Badge status={intern.status} label={intern.status} /></td>
                       <td className="table-cell">
                         <div className="flex items-center gap-2">
@@ -165,9 +173,10 @@ export default function Students() {
                             className="p-2 rounded-lg text-zinc-400 hover:text-violet-600 hover:bg-violet-50 dark:hover:bg-violet-950/30 transition-colors">
                             <Eye size={14} />
                           </Link>
-                          <button className="p-2 rounded-lg text-zinc-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors">
+                          <Link to={`/admin/interns/${intern._id}?edit=1`} title="Edit student profile"
+                            className="p-2 rounded-lg text-zinc-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 transition-colors">
                             <Edit size={14} />
-                          </button>
+                          </Link>
                           <button onClick={() => handleDelete(intern._id)}
                             className="p-2 rounded-lg text-zinc-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
                             <Trash2 size={14} />
@@ -239,6 +248,23 @@ export default function Students() {
               <label className="label">End Date <span className="text-red-500">*</span></label>
               <input {...register('internshipEnd',{ required:true })} type="date" className="input" />
               {errors.internshipEnd && <p className="text-red-500 text-xs mt-1">Required</p>}
+            </div>
+            <div>
+              <label className="label">Internship Plan <span className="text-red-500">*</span></label>
+              <select {...register('internshipPlan',{ required:true, onChange:e => setValue('internshipFee', INTERNSHIP_PLANS[e.target.value] || 0) })} className="input">
+                <option value="">Select duration</option>
+                {Object.entries(INTERNSHIP_PLANS).map(([plan, fee]) => <option key={plan} value={plan}>{plan} — ₹{fee.toLocaleString('en-IN')}</option>)}
+              </select>
+              {errors.internshipPlan && <p className="text-red-500 text-xs mt-1">Select an internship plan</p>}
+            </div>
+            <div>
+              <label className="label">Internship Fee (₹)</label>
+              <input {...register('internshipFee',{ required:true, min:0 })} type="number" min="0" step="1" className="input" placeholder="Auto-filled from plan" />
+              <p className="mt-1 text-xs text-zinc-400">Auto-filled from duration. You can manually edit this amount.</p>
+            </div>
+            <div>
+              <label className="label">Fee Status</label>
+              <select {...register('paymentStatus')} defaultValue="pending" className="input"><option value="pending">Pending payment</option><option value="paid">Paid</option></select>
             </div>
             <div>
               <label className="label">College / University</label>

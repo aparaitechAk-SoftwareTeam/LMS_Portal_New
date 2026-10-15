@@ -15,6 +15,8 @@ router.delete('/:id', authorize('admin'), ctrl.deleteTask);
 router.post('/:id/comment', ctrl.addComment);
 router.get('/my-tasks', authorize('intern'), ctrl.getMyTasks);
 router.post('/submit', authorize('intern'), upload.array('files', 10), ctrl.submitTask);
+router.post('/:id/start', authorize('intern'), ctrl.startTask);
+router.post('/:id/complete', authorize('intern'), ctrl.completeTask);
 router.put('/submission/:id/review', authorize('admin'), ctrl.reviewSubmission);
 
 module.exports = router;

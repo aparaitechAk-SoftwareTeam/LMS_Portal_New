@@ -9,6 +9,11 @@ const { Readable } = require('stream');
 const { LearningEnrollment, LearningCourse } = require('../models/Learning');
 const { Project } = require('../models/ProjectTask');
 
+const isAccessAllowed = (intern, key, automaticEligible) => {
+  const setting = intern.accessControls?.[key] || 'auto';
+  return setting === 'unlocked' || (setting === 'auto' && automaticEligible);
+};
+
 const uploadPDFToCloudinary = (buffer, publicId) => new Promise((resolve, reject) => {
   const stream = cloudinary.uploader.upload_stream(
     { resource_type: 'raw', public_id: publicId, folder: 'certificates' },
@@ -33,9 +38,10 @@ exports.generateCertificate = async (req, res) => {
     const learningCourse = courseId ? await LearningCourse.findById(courseId).select('title') : null;
     if (projectId && ['project_progress', 'project_completion', 'lor'].includes(type)) {
       const project = await Project.findOne({ _id: projectId, assignedTo: internId });
-      const thresholds = { project_progress: 75, project_completion: 95, lor: 100 };
+      const thresholds = { project_progress: 50, project_completion: 60, lor: 90 };
       const threshold = thresholds[type];
-      if (!project || project.progress < threshold) return res.status(400).json({ success: false, message: `This certificate requires ${threshold}% project progress` });
+      const controlKey = { project_progress: 'projectProgress', project_completion: 'projectCompletion', lor: 'lor' }[type];
+      if (!project || !isAccessAllowed(intern, controlKey, project.progress >= threshold)) return res.status(400).json({ success: false, message: `This certificate is currently locked by the progress or admin access setting` });
       const existing = await Certificate.findOne({ intern: internId, project: projectId, type });
       if (existing) return res.status(409).json({ success: false, message: 'This project certificate is already issued' });
     }
@@ -179,10 +185,11 @@ exports.getProjectEligibility = async (req, res) => {
     const data = projects.map(project => ({
       project,
       progressPercent: project.progress || 0,
-      projectProgressEligible: project.progress >= 75,
-      projectCompletionEligible: project.progress >= 95,
-      lorEligible: project.progress >= 100,
-      jobInterviewEligible: project.progress >= 100,
+      projectProgressEligible: isAccessAllowed(intern, 'projectProgress', project.progress >= 50),
+      projectCompletionEligible: isAccessAllowed(intern, 'projectCompletion', project.progress >= 60),
+      lorEligible: isAccessAllowed(intern, 'lor', project.progress >= 90),
+      jobInterviewEligible: isAccessAllowed(intern, 'hrInterview', project.progress >= 95),
+      accessControls: intern.accessControls || {},
       issuedTypes: issued.filter(cert => String(cert.project) === String(project._id)).map(cert => cert.type)
     }));
     res.json({ success: true, data });

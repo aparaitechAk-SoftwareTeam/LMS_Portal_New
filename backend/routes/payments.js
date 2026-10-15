@@ -2,11 +2,38 @@ const express = require('express');
 const router = express.Router();
 const Payment = require('../models/Payment');
 const Intern = require('../models/Intern');
+const { FeeStructure } = require('../models/Others');
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
 const { protect, authorize } = require('../middleware/auth');
 
 router.use(protect, authorize('admin'));
+
+router.get('/fee-structure', async (req, res) => {
+  try { const setting = await FeeStructure.findOneAndUpdate({ key: 'default' }, { $setOnInsert: { key: 'default' } }, { new: true, upsert: true }); res.json({ success: true, data: setting }); }
+  catch (err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
+router.put('/fee-structure', async (req, res) => {
+  try { const { onboardingAmount, finalAmount } = req.body; if (![onboardingAmount, finalAmount].every(value => Number.isFinite(Number(value)) && Number(value) >= 0)) return res.status(400).json({ success:false, message:'Enter valid non-negative amounts' }); const setting = await FeeStructure.findOneAndUpdate({ key:'default' }, { onboardingAmount:Number(onboardingAmount), finalAmount:Number(finalAmount), updatedBy:req.user._id }, { new:true, upsert:true, runValidators:true }); res.json({ success:true, data:setting }); }
+  catch (err) { res.status(500).json({ success:false, message:err.message }); }
+});
+
+router.post('/apply-fee-structure/:internId', async (req, res) => {
+  try {
+    const [intern, setting] = await Promise.all([Intern.findById(req.params.internId), FeeStructure.findOne({ key:'default' })]);
+    if (!intern || !setting) return res.status(404).json({ success:false, message:'Student or fee structure not found' });
+    const entries = [['onboarding', setting.onboardingAmount, 'Onboarding Fee'], ['final', setting.finalAmount, 'Final Internship Fee']];
+    const results = [];
+    for (const [type, amount, title] of entries) {
+      let payment = await Payment.findOne({ intern: intern._id, type }).sort({ createdAt:-1 });
+      if (!payment) payment = await Payment.create({ intern:intern._id, type, title, description:`${title} set by the current admin fee structure.`, amount, status:'pending', paymentMethod:'razorpay', recordedBy:req.user._id });
+      else if (payment.status !== 'paid') { payment.amount=amount; payment.title=title; payment.description=`${title} set by the current admin fee structure.`; await payment.save(); }
+      results.push(payment);
+    }
+    res.json({ success:true, data:results });
+  } catch (err) { res.status(500).json({ success:false, message:err.message }); }
+});
 
 // Analytics summary
 router.get('/analytics', async (req, res) => {
@@ -79,11 +106,11 @@ router.get('/analytics', async (req, res) => {
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
-// Course purchases are intentionally separated from internship/project fees.
+// Internship plan payments are intentionally separated from project fees.
 router.get('/course-sales', async (req, res) => {
   try {
     const { status } = req.query;
-    const query = { type: 'course_purchase' };
+    const query = { type: 'onboarding' };
     if (status) query.status = status;
     const sales = await Payment.find(query)
       .populate({ path: 'intern', populate: { path: 'user', select: 'name email' } })

@@ -5,6 +5,9 @@ const Intern = require('../models/Intern');
 const { Team } = require('../models/Others');
 const { Project } = require('../models/ProjectTask');
 const { PersonalTodo, TeamCalendarEvent, AssessmentQuestion, AssessmentAttempt, ProjectReviewSubmission, JobApplication } = require('../models/Engagement');
+const multer = require('multer');
+const cloudinaryStorage = require('../config/cloudinaryStorage');
+const projectEvidenceUpload = multer({ storage: cloudinaryStorage, limits: { fileSize: 100 * 1024 * 1024 } });
 
 const generateAiQuestions = async ({ domain, topic, difficulty, count }) => {
   const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
@@ -148,13 +151,33 @@ router.get('/assessments/my-attempts', authorize('intern'), async (req, res) => 
   res.json({ success: true, data: attempts });
 });
 
+// Student-level report for the admin profile. Answer keys are never returned here.
+router.get('/assessments/intern/:internId', authorize('admin'), async (req, res) => {
+  try {
+    const attempts = await AssessmentAttempt.find({ intern: req.params.internId })
+      .select('domain topic difficulty score totalQuestions percentage answers createdAt')
+      .sort({ createdAt: -1 });
+    const summary = attempts.reduce((result, attempt) => {
+      result.attempts += 1;
+      result.correct += Number(attempt.score || 0);
+      result.questions += Number(attempt.totalQuestions || 0);
+      result.totalPercentage += Number(attempt.percentage || 0);
+      result.bestPercentage = Math.max(result.bestPercentage, Number(attempt.percentage || 0));
+      return result;
+    }, { attempts: 0, correct: 0, questions: 0, totalPercentage: 0, bestPercentage: 0 });
+    summary.averagePercentage = summary.attempts ? Math.round(summary.totalPercentage / summary.attempts * 100) / 100 : 0;
+    res.json({ success: true, data: attempts, summary });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+});
+
 // Standalone project-review process (separate from daily task submissions).
-router.post('/project-reviews', authorize('intern'), logActivity('submit_project_review', 'project_review'), async (req, res) => {
+router.post('/project-reviews', authorize('intern'), projectEvidenceUpload.fields([{ name: 'codeZip', maxCount: 1 }, { name: 'screenRecording', maxCount: 1 }, { name: 'screenshots', maxCount: 8 }]), logActivity('submit_project_review', 'project_review'), async (req, res) => {
   try {
     const intern = await getIntern(req.user._id);
     const project = intern && await Project.findOne({ _id: req.body.projectId, assignedTo: intern._id });
     if (!project) return res.status(403).json({ success: false, message: 'Project access denied' });
-    const submission = await ProjectReviewSubmission.create({ project: project._id, intern: intern._id, githubUrl: req.body.githubUrl, liveUrl: req.body.liveUrl, videoUrl: req.body.videoUrl, notes: req.body.notes, attachments: req.body.attachments || [] });
+    const evidence = file => file ? { name: file.originalname, url: file.path, publicId: file.filename, mimeType: file.mimetype } : undefined;
+    const submission = await ProjectReviewSubmission.create({ project: project._id, intern: intern._id, githubUrl: req.body.githubUrl, liveUrl: req.body.liveUrl, videoUrl: req.body.videoUrl, weekNumber: Number(req.body.weekNumber || 1), notes: req.body.notes, codeZip: evidence(req.files?.codeZip?.[0]), screenRecording: evidence(req.files?.screenRecording?.[0]), screenshots: (req.files?.screenshots || []).map(evidence), attachments: req.body.attachments || [] });
     res.status(201).json({ success: true, data: submission });
   } catch (err) { res.status(400).json({ success: false, message: err.message }); }
 });
@@ -162,6 +185,12 @@ router.get('/project-reviews/my', authorize('intern'), async (req, res) => {
   const intern = await getIntern(req.user._id);
   const submissions = intern ? await ProjectReviewSubmission.find({ intern: intern._id }).populate('project', 'title').sort({ createdAt: -1 }) : [];
   res.json({ success: true, data: submissions });
+});
+router.get('/project-reviews/intern/:internId', authorize('admin'), async (req, res) => {
+  try {
+    const submissions = await ProjectReviewSubmission.find({ intern: req.params.internId }).populate('project', 'title level').sort({ weekNumber: -1, createdAt: -1 });
+    res.json({ success: true, data: submissions });
+  } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 router.get('/project-reviews', authorize('admin'), async (req, res) => {
   const query = req.query.status ? { status: req.query.status } : {};
@@ -176,12 +205,14 @@ router.put('/project-reviews/:id/review', authorize('admin'), logActivity('revie
   res.json({ success: true, data: submission });
 });
 
-// Job/HR workflow unlocks only when an assigned project reaches 100%.
+// Job/HR workflow unlocks at 95% project progress, unless an admin overrides access.
 router.post('/job-applications', authorize('intern'), logActivity('submit_job_application', 'job_application'), async (req, res) => {
   try {
     const intern = await getIntern(req.user._id);
     const project = intern && await Project.findOne({ _id: req.body.projectId, assignedTo: intern._id });
-    if (!project || project.progress < 100) return res.status(403).json({ success: false, message: 'Job applications unlock after 100% project progress' });
+    const hrControl = intern?.accessControls?.hrInterview || 'auto';
+    const jobUnlocked = hrControl === 'unlocked' || (hrControl === 'auto' && project?.progress >= 95);
+    if (!project || !jobUnlocked) return res.status(403).json({ success: false, message: 'Job applications are currently locked by project progress or the admin access setting' });
     const application = await JobApplication.create({ intern: intern._id, project: project._id, resumeUrl: req.body.resumeUrl, portfolioUrl: req.body.portfolioUrl, notes: req.body.notes });
     res.status(201).json({ success: true, data: application });
   } catch (err) { res.status(400).json({ success: false, message: err.code === 11000 ? 'You have already applied for this project' : err.message }); }

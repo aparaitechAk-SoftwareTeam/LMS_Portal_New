@@ -75,6 +75,13 @@ const certificateSchema = new mongoose.Schema({
   generatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
+const feeStructureSchema = new mongoose.Schema({
+  key: { type: String, default: 'default', unique: true },
+  onboardingAmount: { type: Number, min: 0, default: 0 },
+  finalAmount: { type: Number, min: 0, default: 0 },
+  updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+}, { timestamps: true });
+
 // Activity Log Model
 const activityLogSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -91,5 +98,6 @@ module.exports = {
   Notification: mongoose.model('Notification', notificationSchema),
   SupportTicket: mongoose.model('SupportTicket', ticketSchema),
   Certificate: mongoose.model('Certificate', certificateSchema),
+  FeeStructure: mongoose.model('FeeStructure', feeStructureSchema),
   ActivityLog: mongoose.model('ActivityLog', activityLogSchema)
 };

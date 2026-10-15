@@ -9,6 +9,11 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 const dns = require('dns');
 
+if (!process.env.MONGO_URI) {
+  console.error("❌ MONGO_URI is missing from environment configuration.");
+  process.exit(1);
+}
+
 if (process.env.MONGODB_DNS_SERVERS) {
   dns.setServers(process.env.MONGODB_DNS_SERVERS.split(',').map(server => server.trim()));
 }
@@ -30,9 +35,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/api/', rateLimit({ windowMs: 15 * 60 * 1000, max: 500 }));
 
-mongoose.connect(process.env.MONGO_URI, { serverSelectionTimeoutMS: Number(process.env.MONGODB_SERVER_SELECTION_TIMEOUT_MS) || 30000 })
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB error:', err));
+const connectDB = require('./config/db');
 
 require('./sockets/socketHandler')(io);
 app.set('io', io);
@@ -65,6 +68,10 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 if (require.main === module) {
-  server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    // Do not make the HTTP server wait for a remote database/DNS connection.
+    connectDB().catch(() => console.error('⚠️ Initial MongoDB connection failed. Mongoose will retry automatically.'));
+  });
 }
 module.exports = { app, io, server };

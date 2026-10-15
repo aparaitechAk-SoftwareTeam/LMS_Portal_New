@@ -4,6 +4,13 @@ const { Notification } = require('../models/Others');
 const emailService = require('../services/emailService');
 const cloudinary = require('../config/cloudinary');
 const ExcelJS = require('exceljs');
+const Payment = require('../models/Payment');
+
+const INTERNSHIP_PLAN_FEES = {
+  '1 Month Internship': 3000,
+  '2 Month Internship': 5000,
+  '3 Month Internship': 6000,
+};
 
 exports.getAllInterns = async (req, res) => {
   try {
@@ -35,7 +42,7 @@ exports.getAllInterns = async (req, res) => {
 
 exports.createIntern = async (req, res) => {
   try {
-    const { name, email, password, phone, department, techStack, college, internshipStart, internshipEnd, mentor, stipend } = req.body;
+    const { name, email, password, phone, department, techStack, college, internshipStart, internshipEnd, mentor, stipend, internshipPlan, internshipFee, paymentStatus = 'pending' } = req.body;
 
     if (!name || !email || !department || !internshipStart || !internshipEnd) {
       return res.status(400).json({ success: false, message: 'Name, email, department, internshipStart and internshipEnd are required' });
@@ -48,10 +55,26 @@ exports.createIntern = async (req, res) => {
     const parsedCollege = typeof college === 'string' ? JSON.parse(college || '{}') : (college || {});
 
     const user = await User.create({ name, email, password: password || 'Intern@123', phone, role: 'intern' });
+    const suggestedFee = INTERNSHIP_PLAN_FEES[internshipPlan] || 0;
+    const fee = internshipFee === undefined || internshipFee === '' ? suggestedFee : Number(internshipFee);
+    if (!Number.isFinite(fee) || fee < 0) return res.status(400).json({ success: false, message: 'A valid internship fee is required' });
     const intern = await Intern.create({
       user: user._id, department, techStack: parsedTechStack,
-      college: parsedCollege, internshipStart, internshipEnd, mentor, stipend
+      college: parsedCollege, internshipStart, internshipEnd, mentor, stipend, internshipPlan, internshipFee: fee
     });
+    if (internshipPlan) {
+      await Payment.create({
+        intern: intern._id,
+        type: 'onboarding',
+        title: internshipPlan,
+        description: `Internship fee for ${internshipPlan}`,
+        amount: fee,
+        status: paymentStatus === 'paid' ? 'paid' : 'pending',
+        paidDate: paymentStatus === 'paid' ? new Date() : undefined,
+        paymentMethod: 'other',
+        recordedBy: req.user._id,
+      });
+    }
 
     await emailService.sendWelcomeEmail(email, name, email, password || 'Intern@123');
     res.status(201).json({ success: true, data: { user: user.toJSON(), intern } });
@@ -71,6 +94,14 @@ exports.updateIntern = async (req, res) => {
     }
     Object.assign(intern, internFields);
     await intern.save();
+    if (Object.hasOwn(req.body, 'internshipFee') || Object.hasOwn(req.body, 'internshipPlan')) {
+      const latestFee = await Payment.findOne({ intern: intern._id, type: 'onboarding' }).sort({ createdAt: -1 });
+      if (latestFee) {
+        if (Object.hasOwn(req.body, 'internshipFee')) latestFee.amount = Number(intern.internshipFee || 0);
+        if (intern.internshipPlan) { latestFee.title = intern.internshipPlan; latestFee.description = `Internship fee for ${intern.internshipPlan}`; }
+        await latestFee.save();
+      }
+    }
 
     const updated = await Intern.findById(req.params.id).populate('user', 'name email phone avatar');
     res.json({ success: true, data: updated });

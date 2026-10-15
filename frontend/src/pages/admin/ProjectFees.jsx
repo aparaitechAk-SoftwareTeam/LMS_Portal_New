@@ -25,6 +25,8 @@ export default function ProjectFees() {
   const [filters,    setFilters]    = useState({ status:'', internId:'' })
   const [pagination, setPagination] = useState({})
   const [page,       setPage]       = useState(1)
+  const [structure, setStructure] = useState({ onboardingAmount:0, finalAmount:0 })
+  const [structureOpen, setStructureOpen] = useState(false)
   const { register, handleSubmit, reset } = useForm()
 
   const fetchFees = async (p = 1) => {
@@ -38,8 +40,8 @@ export default function ProjectFees() {
   }
 
   useEffect(() => {
-    Promise.all([api.get('/interns?limit=200&status=active'), api.get('/projects?limit=100')])
-      .then(([iRes, pRes]) => { setInterns(iRes.data.data||[]); setProjects(pRes.data.data||[]) })
+    Promise.all([api.get('/interns?limit=200&status=active'), api.get('/projects?limit=100'), api.get('/payments/fee-structure')])
+      .then(([iRes, pRes, structureRes]) => { setInterns(iRes.data.data||[]); setProjects(pRes.data.data||[]); setStructure(structureRes.data.data || {}) })
   }, [])
   useEffect(() => { fetchFees(1); setPage(1) }, [filters])
 
@@ -57,14 +59,17 @@ export default function ProjectFees() {
     await api.delete(`/razorpay/fees/${id}`)
     toast.success('Fee removed'); fetchFees(page)
   }
+  const saveStructure = async () => { try { await api.put('/payments/fee-structure', structure); toast.success('Fee structure saved'); setStructureOpen(false) } catch (error) { toast.error(error.response?.data?.message || 'Could not save fee structure') } }
 
   const totalPaid    = fees.filter(f=>f.status==='paid').reduce((s,f)=>s+f.amount,0)
   const totalPending = fees.filter(f=>f.status==='pending').reduce((s,f)=>s+f.amount,0)
 
   return (
     <div className="space-y-5 max-w-screen-xl">
-      <PageHeader title="Project Fees" subtitle="Assign and track project fees for students"
-        actions={<button onClick={() => setModal(true)} className="btn-primary text-sm"><Plus size={15}/>Assign Fee</button>} />
+      <PageHeader title="Fee Management" subtitle="Set onboarding/final fee structure and track student payments"
+        actions={<><button onClick={() => setStructureOpen(true)} className="btn-secondary text-sm">Fee Structure</button><button onClick={() => setModal(true)} className="btn-primary text-sm"><Plus size={15}/>Assign Fee</button></>} />
+
+      <div className="card p-4 flex flex-wrap items-center gap-5"><div><p className="text-xs text-zinc-400">Onboarding fee</p><p className="font-bold text-violet-600">₹{Number(structure.onboardingAmount || 0).toLocaleString('en-IN')}</p></div><div><p className="text-xs text-zinc-400">Final fee</p><p className="font-bold text-violet-600">₹{Number(structure.finalAmount || 0).toLocaleString('en-IN')}</p></div><p className="text-xs text-zinc-500">Apply this structure from a student profile to create/update their two Razorpay payment dues.</p></div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
@@ -146,6 +151,7 @@ export default function ProjectFees() {
       </div>
 
       {/* Assign Fee Modal */}
+      <Modal isOpen={structureOpen} onClose={()=>setStructureOpen(false)} title="Internship Fee Structure" subtitle="These amounts are used when the structure is applied to a student."><div className="space-y-4"><div><label className="label">Onboarding amount (₹)</label><input className="input" type="number" min="0" value={structure.onboardingAmount || 0} onChange={e=>setStructure({...structure,onboardingAmount:e.target.value})}/></div><div><label className="label">Final amount (₹)</label><input className="input" type="number" min="0" value={structure.finalAmount || 0} onChange={e=>setStructure({...structure,finalAmount:e.target.value})}/></div><p className="rounded-xl bg-violet-50 p-3 text-xs text-violet-700 dark:bg-violet-950/30 dark:text-violet-200">Saved values do not overwrite already verified payments. You choose when to apply them to each student.</p><button onClick={saveStructure} className="btn-primary w-full">Save Fee Structure</button></div></Modal>
       <Modal isOpen={modal} onClose={()=>{setModal(false);reset()}} title="Assign Project Fee"
         subtitle="Student will receive email notification and can pay via Razorpay" size="lg">
         <form onSubmit={handleSubmit(onAssign)} className="space-y-4">

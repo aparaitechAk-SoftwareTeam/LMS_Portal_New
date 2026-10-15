@@ -35,13 +35,17 @@ export default function Projects() {
       setModal(false); reset(); fetchProjects()
     } catch {} finally { setSaving(false) }
   }
+  const generateWorkflow = async project => {
+    try { const { data } = await api.post(`/projects/${project._id}/generate-workflow`); toast.success(data.data.created ? `${data.data.created} project tasks generated` : 'This workflow is already generated'); fetchProjects() }
+    catch (error) { toast.error(error.response?.data?.message || 'Could not generate project workflow') }
+  }
 
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-slate-800 dark:text-white">Projects</h1>
-          <p className="text-sm text-slate-400">{projects.length} projects total</p>
+          <p className="text-sm text-slate-400">{projects.length} project templates in the student selection library</p>
         </div>
         <button onClick={() => setModal(true)} className="btn-primary flex items-center gap-2 text-sm"><Plus size={15} />Create Project</button>
       </div>
@@ -75,15 +79,16 @@ export default function Projects() {
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between">
               <div className="flex items-center gap-1 text-slate-400">
                 <Users size={13} />
-                <span className="text-xs">{project.assignedTo?.length || 0} interns</span>
+                <span className="text-xs">{project.isProjectTemplate ? 'Student-selectable template' : `${project.assignedTo?.length || 0} students`}</span>
               </div>
               {project.endDate && (
                 <span className="text-xs text-slate-400">Due: {new Date(project.endDate).toLocaleDateString()}</span>
               )}
               <div className="flex gap-1">
+                {!project.isProjectTemplate && !project.autoWorkflowGenerated && <button onClick={() => generateWorkflow(project)} title="Generate 4 phases and 20 tasks" className="px-2 text-xs font-semibold text-violet-600 hover:text-violet-800">Generate tasks</button>}
                 <button className="p-1.5 text-slate-400 hover:text-amber-500 transition-colors"><Edit size={14} /></button>
                 <button onClick={async () => { if (confirm('Delete?')) { await api.delete(`/projects/${project._id}`); fetchProjects() } }} className="p-1.5 text-slate-400 hover:text-red-500 transition-colors"><Trash2 size={14} /></button>
               </div>
@@ -112,6 +117,7 @@ export default function Projects() {
           <div><label className="label">Project Title</label><input {...register('title', { required: true })} className="input" placeholder="Project name" /></div>
           <div><label className="label">Description</label><textarea {...register('description', { required: true })} className="input h-20 resize-none" /></div>
           <div className="grid grid-cols-2 gap-4">
+            <div><label className="label">Student level</label><select {...register('level')} className="input"><option value="easy">Easy</option><option value="intermediate">Intermediate</option><option value="hard">Hard</option></select></div>
             <div><label className="label">Status</label>
               <select {...register('status')} className="input">
                 {['pending','ongoing','review','completed'].map(s => <option key={s} value={s}>{s}</option>)}
@@ -123,15 +129,10 @@ export default function Projects() {
               </select>
             </div>
             <div><label className="label">Start Date</label><input {...register('startDate')} type="date" className="input" /></div>
-            <div><label className="label">End Date</label><input {...register('endDate')} type="date" className="input" /></div>
+          <div><label className="label">End Date</label><input {...register('endDate')} type="date" className="input" /><p className="mt-1 text-xs text-zinc-400">Leave blank to schedule a one-month live project automatically.</p></div>
           </div>
           <div><label className="label">Tech Stack (comma separated)</label><input {...register('techStack')} className="input" placeholder="React, Node.js, MongoDB" /></div>
-          <div><label className="label">Assign To</label>
-            <select {...register('assignedTo')} className="input">
-              <option value="">Select intern</option>
-              {interns.map(i => <option key={i._id} value={i._id}>{i.user?.name} — {i.department}</option>)}
-            </select>
-          </div>
+          <div className="rounded-xl border border-violet-100 bg-violet-50 p-3 text-xs leading-5 text-violet-800 dark:border-violet-900 dark:bg-violet-950/30 dark:text-violet-200">This is a project template. Students choose one project from each level themselves; their private one-month workflow is then generated automatically.</div>
           <div><label className="label">Milestones (one per line)</label><textarea {...register('milestones')} className="input h-20 resize-none" placeholder="Design mockups&#10;Backend API&#10;Frontend integration" /></div>
           <div><label className="label">GitHub Repository</label><input {...register('githubRepo')} className="input" placeholder="https://github.com/..." /></div>
           <div className="flex gap-3 pt-2">

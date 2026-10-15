@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FolderKanban, Github, ExternalLink, CheckCircle, Circle } from 'lucide-react'
+import { FolderKanban, Github, ExternalLink, CheckCircle, Circle, Sparkles, Lock } from 'lucide-react'
 import api from '../../services/api'
 import { Badge, Empty, Skeleton, PageHeader } from '../../components/common/index'
 import { motion } from 'framer-motion'
@@ -8,11 +8,15 @@ export default function MyProjects() {
   const [projects, setProjects] = useState([])
   const [loading, setLoading]   = useState(true)
   const [selected, setSelected] = useState(null)
+  const [library, setLibrary] = useState([])
+  const [selectedLevels, setSelectedLevels] = useState([])
+  const [selecting, setSelecting] = useState('')
 
   useEffect(() => {
-    api.get('/projects').then(r => { setProjects(r.data.data); if(r.data.data.length) setSelected(r.data.data[0]._id) })
+    Promise.all([api.get('/projects'), api.get('/projects/library')]).then(([projectResponse, libraryResponse]) => { setProjects(projectResponse.data.data); if(projectResponse.data.data.length) setSelected(projectResponse.data.data[0]._id); setLibrary(libraryResponse.data.data || []); setSelectedLevels(libraryResponse.data.selectedLevels || []) })
       .finally(() => setLoading(false))
   }, [])
+  const chooseProject = async project => { setSelecting(project._id); try { const { data } = await api.post(`/projects/${project._id}/select`); setProjects(current => [data.data, ...current]); setSelected(data.data._id); setSelectedLevels(current => [...current, project.level]); } catch (error) {} finally { setSelecting('') } }
 
   const statusGrad = {
     pending:   'from-zinc-400 to-zinc-500',
@@ -24,6 +28,8 @@ export default function MyProjects() {
   return (
     <div className="space-y-5 max-w-screen-xl">
       <PageHeader title="My Projects" subtitle={`${projects.length} project(s) assigned`} />
+
+      {!loading && <section className="card overflow-hidden"><div className="border-b border-violet-100 bg-gradient-to-r from-violet-50 to-sky-50 p-5 dark:border-violet-900/40 dark:from-violet-950/30 dark:to-sky-950/20"><div className="flex items-center gap-2"><Sparkles size={18} className="text-violet-600"/><div><h2 className="font-bold">Choose your live projects</h2><p className="mt-0.5 text-xs text-zinc-500">Choose one project in each level. Every choice receives its own one-month, 20-step workflow.</p></div></div></div><div className="grid gap-4 p-5 md:grid-cols-3">{['easy','intermediate','hard'].map(level => { const choices=library.filter(project => project.level===level); const locked=selectedLevels.includes(level); const colors={easy:'text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30',intermediate:'text-amber-600 bg-amber-50 dark:bg-amber-950/30',hard:'text-rose-600 bg-rose-50 dark:bg-rose-950/30'}; return <div key={level} className="rounded-2xl border border-zinc-100 p-4 dark:border-zinc-800"><div className="flex items-center justify-between"><span className={`rounded-full px-2.5 py-1 text-xs font-bold capitalize ${colors[level]}`}>{level}</span>{locked && <span className="flex items-center gap-1 text-xs font-semibold text-zinc-400"><Lock size={11}/>Selected</span>}</div><div className="mt-3 space-y-2">{choices.length ? choices.map(project => <div key={project._id} className="rounded-xl bg-zinc-50 p-3 dark:bg-zinc-800"><p className="text-sm font-semibold">{project.title}</p><p className="mt-1 line-clamp-2 text-xs text-zinc-500">{project.description}</p><button disabled={locked || selecting===project._id} onClick={() => chooseProject(project)} className="btn-primary mt-3 w-full text-xs disabled:cursor-not-allowed disabled:opacity-50">{selecting===project._id ? 'Creating workspace…' : locked ? 'Project selected' : 'Choose this project'}</button></div>) : <p className="text-sm text-zinc-400">No {level} project is available yet.</p>}</div></div> })}</div></section>}
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

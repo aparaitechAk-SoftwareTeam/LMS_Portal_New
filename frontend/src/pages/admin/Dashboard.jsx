@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { GraduationCap, FolderKanban, CheckSquare, CalendarCheck, Award, UserCheck, UserX, TrendingUp } from 'lucide-react'
+import { GraduationCap, FolderKanban, CalendarCheck, Award, UserCheck, UserX, TrendingUp, Info, ArrowRight, ClipboardList, Users } from 'lucide-react'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend
@@ -7,6 +7,7 @@ import {
 import { StatCard, Skeleton, Badge, PageHeader } from '../../components/common/index'
 import api from '../../services/api'
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { COMPANY_NAME } from '../../utils/constants'
 
 const COLORS = ['#7c3aed','#10b981','#f59e0b','#ef4444','#06b6d4','#8b5cf6']
@@ -23,6 +24,19 @@ const CustomTooltip = ({ active, payload, label }) => {
     </div>
   )
 }
+
+const DashboardNote = ({ children, to, linkLabel='Open details' }) => (
+  <div className="mt-4 flex items-start justify-between gap-3 rounded-xl border border-violet-100 bg-violet-50/70 px-3 py-2.5 text-xs text-zinc-600 dark:border-violet-900/60 dark:bg-violet-950/20 dark:text-zinc-300">
+    <p className="flex min-w-0 gap-2 leading-5"><Info size={15} className="mt-0.5 shrink-0 text-violet-600"/>{children}</p>
+    {to && <Link to={to} className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap font-semibold text-violet-700 hover:text-violet-900 dark:text-violet-300"><span className="hidden sm:inline">{linkLabel}</span><ArrowRight size={14}/></Link>}
+  </div>
+)
+
+const ClickableCard = ({ to, children }) => (
+  <Link to={to} className="block rounded-xl transition-all duration-200 hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 dark:focus:ring-offset-zinc-950">
+    {children}
+  </Link>
+)
 
 export default function AdminDashboard() {
   const [data, setData]     = useState(null)
@@ -62,6 +76,13 @@ export default function AdminDashboard() {
         subtitle={`Here's what's happening with your internship program today.`}
       />
 
+      <div className="rounded-2xl border border-sky-100 bg-sky-50/70 p-4 dark:border-sky-900/50 dark:bg-sky-950/20">
+        <div className="flex items-start gap-3">
+          <div className="rounded-xl bg-sky-100 p-2 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300"><Info size={18}/></div>
+          <div><h2 className="font-bold text-zinc-900 dark:text-white">How to use this dashboard</h2><p className="mt-1 text-sm leading-6 text-zinc-600 dark:text-zinc-300">Use the number cards for the current program snapshot. Hover any graph point or bar to see the exact count. The notes below explain what each section measures and link you to the place where you can take action.</p></div>
+        </div>
+      </div>
+
       {/* Hero banner */}
       <div className="rounded-2xl overflow-hidden relative p-6 sm:p-8"
            style={{ background:'linear-gradient(135deg,#2e1065 0%,#4c1d95 40%,#7c3aed 100%)' }}>
@@ -70,10 +91,10 @@ export default function AdminDashboard() {
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <p className="text-violet-300 text-sm font-medium mb-1">Program Overview</p>
-            <h2 className="text-white font-bold text-2xl sm:text-3xl">
+            <Link to="/admin/interns" className="inline-block rounded-lg transition hover:text-cyan-100 focus:outline-none focus:ring-2 focus:ring-cyan-200"><h2 className="text-white font-bold text-2xl sm:text-3xl">
               {stats?.activeInterns || 0} Active Students
-            </h2>
-            <p className="text-violet-300 text-sm mt-1">across {stats?.ongoingProjects||0} ongoing projects</p>
+            </h2></Link>
+            <Link to="/admin/projects" className="mt-1 inline-block text-sm text-violet-300 transition hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-200">across {stats?.ongoingProjects||0} ongoing projects →</Link>
           </div>
           <div className="flex gap-6">
             {[
@@ -92,29 +113,29 @@ export default function AdminDashboard() {
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label:'Total Students',  value:stats?.totalInterns,     icon:GraduationCap, color:'violet' },
-          { label:'Active Students', value:stats?.activeInterns,    icon:UserCheck,     color:'green'  },
-          { label:'Completed',       value:stats?.completedInterns, icon:Award,         color:'violet' },
-          { label:'Today Present',   value:stats?.todayAttendance,  icon:CalendarCheck, color:'amber'  },
+          { label:'Total Students',  value:stats?.totalInterns,     icon:GraduationCap, color:'violet', subtitle:'All registered students', to:'/admin/interns' },
+          { label:'Active Students', value:stats?.activeInterns,    icon:UserCheck,     color:'green', subtitle:'Currently active in program', to:'/admin/interns'  },
+          { label:'Completed',       value:stats?.completedInterns, icon:Award,         color:'violet', subtitle:'Finished internship program', to:'/admin/interns' },
+          { label:'Today Present',   value:stats?.todayAttendance,  icon:CalendarCheck, color:'amber', subtitle:'Attendance marked today', to:'/admin/attendance'  },
         ].map((s,i) => (
-          <motion.div key={i} initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} transition={{ delay:i*.06 }}>
-            <StatCard {...s} />
+          <motion.div key={s.label} initial={{ opacity:0, y:10 }} animate={{ opacity:1, y:0 }} transition={{ delay:i*.06 }}>
+            <ClickableCard to={s.to}><StatCard {...s} /></ClickableCard>
           </motion.div>
         ))}
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         {[
-          { label:'Total Projects',   value:stats?.totalProjects,    icon:FolderKanban, color:'violet' },
-          { label:'Ongoing Projects', value:stats?.ongoingProjects,  icon:TrendingUp,   color:'sky'    },
-          { label:'Terminated',       value:stats?.terminatedInterns,icon:UserX,        color:'red'    },
-        ].map((s,i) => <StatCard key={i} {...s} />)}
+          { label:'Total Projects',   value:stats?.totalProjects,    icon:FolderKanban, color:'violet', subtitle:'All created projects', to:'/admin/projects' },
+          { label:'Ongoing Projects', value:stats?.ongoingProjects,  icon:TrendingUp,   color:'sky', subtitle:'Projects still in progress', to:'/admin/projects' },
+          { label:'Terminated',       value:stats?.terminatedInterns,icon:UserX,        color:'red', subtitle:'Students no longer active', to:'/admin/interns' },
+        ].map(s => <ClickableCard key={s.label} to={s.to}><StatCard {...s} /></ClickableCard>)}
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="card p-5">
-          <h3 className="font-bold text-zinc-900 dark:text-white mb-1">Weekly Submissions</h3>
+          <Link to="/admin/tasks" className="inline-block rounded focus:outline-none focus:ring-2 focus:ring-violet-500"><h3 className="font-bold text-zinc-900 dark:text-white mb-1">Weekly Submissions</h3></Link>
           <p className="text-xs text-zinc-400 mb-4">Task submissions & approvals this week</p>
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={weeklyData}>
@@ -137,10 +158,11 @@ export default function AdminDashboard() {
               <Area type="monotone" dataKey="Approved"  stroke="#10b981" strokeWidth={2} fill="url(#gApprove)" />
             </AreaChart>
           </ResponsiveContainer>
+          <DashboardNote to="/admin/tasks" linkLabel="Manage tasks">This graph compares task work created by students (purple) with work already approved by admins (green), day by day. A large gap means submissions are waiting for review.</DashboardNote>
         </div>
 
         <div className="card p-5">
-          <h3 className="font-bold text-zinc-900 dark:text-white mb-1">Department Distribution</h3>
+          <Link to="/admin/interns" className="inline-block rounded focus:outline-none focus:ring-2 focus:ring-violet-500"><h3 className="font-bold text-zinc-900 dark:text-white mb-1">Department Distribution</h3></Link>
           <p className="text-xs text-zinc-400 mb-4">Students across departments</p>
           {pieData.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
@@ -153,13 +175,14 @@ export default function AdminDashboard() {
               </PieChart>
             </ResponsiveContainer>
           ) : <div className="h-40 flex items-center justify-center text-zinc-400 text-sm">No department data yet</div>}
+          <DashboardNote to="/admin/interns" linkLabel="View students">This donut graph shows how students are distributed across departments. Use it to see which department needs more mentors, projects or seats.</DashboardNote>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Task Status */}
         <div className="card p-5">
-          <h3 className="font-bold text-zinc-900 dark:text-white mb-1">Task Status Overview</h3>
+          <Link to="/admin/tasks" className="inline-block rounded focus:outline-none focus:ring-2 focus:ring-violet-500"><h3 className="font-bold text-zinc-900 dark:text-white mb-1">Task Status Overview</h3></Link>
           <p className="text-xs text-zinc-400 mb-4">Current task pipeline</p>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={taskData} layout="vertical" barSize={12}>
@@ -172,15 +195,16 @@ export default function AdminDashboard() {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+          <DashboardNote to="/admin/tasks" linkLabel="Review tasks">This pipeline shows every task by its latest status. Focus on Pending and Submitted counts to assign work and review student submissions faster.</DashboardNote>
         </div>
 
         {/* Top Performers */}
         <div className="card p-5">
-          <h3 className="font-bold text-zinc-900 dark:text-white mb-1">Top Performers</h3>
+          <Link to="/admin/interns" className="inline-block rounded focus:outline-none focus:ring-2 focus:ring-violet-500"><h3 className="font-bold text-zinc-900 dark:text-white mb-1">Top Performers</h3></Link>
           <p className="text-xs text-zinc-400 mb-4">Ranked by performance score</p>
           <div className="space-y-3.5">
             {topPerformers?.length > 0 ? topPerformers.map((intern,i) => (
-              <div key={intern._id} className="flex items-center gap-3">
+              <Link to={`/admin/interns/${intern._id}`} key={intern._id} className="flex items-center gap-3 rounded-xl p-2 -mx-2 transition hover:bg-zinc-50 dark:hover:bg-zinc-800/60">
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0
                   ${i===0 ? 'bg-amber-400 text-white' : i===1 ? 'bg-zinc-300 text-zinc-700' : i===2 ? 'bg-orange-400 text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'}`}>
                   {i+1}
@@ -198,15 +222,16 @@ export default function AdminDashboard() {
                   </div>
                   <span className="text-xs font-bold text-zinc-500 w-6 text-right">{intern.performanceScore}</span>
                 </div>
-              </div>
+              </Link>
             )) : <p className="text-zinc-400 text-sm">No performance data yet</p>}
           </div>
+          <DashboardNote to="/admin/interns" linkLabel="View students">Students are ranked by their performance score out of 100. Use this list to identify strong performers and learners who may need support.</DashboardNote>
         </div>
       </div>
 
       {/* Recent Activity */}
       <div className="card p-5">
-        <h3 className="font-bold text-zinc-900 dark:text-white mb-4">Recent Activity</h3>
+        <div className="flex items-center justify-between gap-3 mb-4"><div><h3 className="font-bold text-zinc-900 dark:text-white">Recent Activity</h3><p className="mt-1 text-xs text-zinc-400">Latest actions performed across the portal</p></div><ClipboardList size={19} className="text-violet-500"/></div>
         <div className="space-y-4">
           {recentActivities?.length > 0 ? recentActivities.slice(0,6).map((act,i) => (
             <div key={i} className="flex items-start gap-3 text-sm">
@@ -223,6 +248,7 @@ export default function AdminDashboard() {
             </div>
           )) : <p className="text-zinc-400 text-sm">No recent activity</p>}
         </div>
+        <DashboardNote to="/admin/interns" linkLabel="Manage portal">This is an audit-style timeline of recent user actions. It helps you quickly confirm what changed and who performed the action.</DashboardNote>
       </div>
     </div>
   )
