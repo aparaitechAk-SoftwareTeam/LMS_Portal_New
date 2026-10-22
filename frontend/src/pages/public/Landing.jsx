@@ -13,12 +13,14 @@ import {
   Mail,
   MapPin,
   Menu,
+  Moon,
   Phone,
   Send,
   Sparkles,
   Users,
   X,
   Youtube,
+  Sun,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import api from "../../services/api";
@@ -39,7 +41,7 @@ const NavLink = ({ children, to, href, active = false }) => {
       )}
     </>
   );
-  const className = `relative flex h-[54px] items-center justify-center px-2 text-[14px] font-medium transition-colors duration-200 ${active ? "text-teal-600" : "text-slate-600 hover:text-teal-600"}`;
+  const className = `relative flex h-[54px] items-center justify-center px-2 text-[14px] font-medium transition-colors duration-200 ${active ? "text-teal-600 dark:text-teal-300" : "text-slate-600 hover:text-teal-600 dark:text-slate-300 dark:hover:text-teal-300"}`;
   return to ? (
     <Link to={to} className={className}>
       {content}
@@ -55,6 +57,7 @@ export default function Landing() {
   const [intro, setIntro] = useState(true),
     [phase, setPhase] = useState(0),
     [menu, setMenu] = useState(false),
+    [darkMode, setDarkMode] = useState(() => localStorage.getItem("aparaitech-theme") === "dark"),
     [email, setEmail] = useState(""),
     [sending, setSending] = useState(false);
   useEffect(() => {
@@ -66,6 +69,9 @@ export default function Landing() {
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
+  useEffect(() => {
+    localStorage.setItem("aparaitech-theme", darkMode ? "dark" : "light");
+  }, [darkMode]);
   const subscribe = async (e) => {
     e.preventDefault();
     setSending(true);
@@ -84,7 +90,7 @@ export default function Landing() {
     }
   };
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[linear-gradient(135deg,#f8fcff_0%,#f5f2ff_50%,#f0fffc_100%)] text-slate-900 selection:bg-teal-200">
+    <div className={`${darkMode ? "dark" : ""} min-h-screen overflow-x-hidden bg-[linear-gradient(135deg,#f8fcff_0%,#f5f2ff_50%,#f0fffc_100%)] text-slate-900 selection:bg-teal-200 dark:bg-[linear-gradient(135deg,#071b22_0%,#10142a_54%,#111827_100%)] dark:text-slate-100`}>
       {intro && (
         <div className="pointer-events-none fixed inset-0 z-[100]">
           <div
@@ -137,13 +143,13 @@ export default function Landing() {
       <header
         className={`fixed left-0 right-0 top-[6px] z-40 transition-all duration-700 ${phase >= 3 ? "translate-y-0 opacity-100" : "-translate-y-3 opacity-0"}`}
       >
-        <div className="mx-auto flex h-[76px] w-[99.2%] items-center rounded-[17px] border border-white/80 bg-white/85 px-[18px] shadow-[0_10px_32px_rgba(15,23,42,.10)] backdrop-blur-xl">
+        <div className="mx-auto flex h-[76px] w-[99.2%] items-center rounded-[17px] border border-white/80 bg-white/85 px-[18px] shadow-[0_10px_32px_rgba(15,23,42,.10)] backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/85 dark:shadow-[0_10px_32px_rgba(0,0,0,.35)]">
           <Link
             to="/"
             className={`hidden w-[300px] shrink-0 items-center gap-[13px] transition-opacity lg:flex ${intro ? "opacity-0" : "opacity-100"}`}
           >
             <img src={logo} className="h-[42px] w-[42px] rounded-[12px]" />
-            <span className="text-[16px] font-semibold tracking-[.18em] text-slate-900">
+            <span className="text-[16px] font-semibold tracking-[.18em] text-slate-900 dark:text-white">
               APARAITECH
             </span>
           </Link>
@@ -165,10 +171,17 @@ export default function Landing() {
             </nav>
           </div>
           <div className="ml-auto hidden w-[300px] shrink-0 items-center justify-end lg:flex">
-            <div className="mr-[20px] h-[34px] w-px bg-slate-200" />
+            <button
+              onClick={() => setDarkMode((value) => !value)}
+              aria-label={darkMode ? "Switch to light mode" : "Switch to dark mode"}
+              className="mr-3 flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-teal-300 hover:text-teal-600 dark:border-slate-700 dark:bg-slate-900 dark:text-amber-300"
+            >
+              {darkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+            <div className="mr-[20px] h-[34px] w-px bg-slate-200 dark:bg-slate-700" />
             <Link
               to="/login"
-              className="flex h-[42px] min-w-[96px] items-center justify-center rounded-[10px] border border-slate-200 bg-white px-5 text-[14px] font-medium text-slate-700 transition hover:border-teal-300 hover:text-teal-700"
+              className="flex h-[42px] min-w-[96px] items-center justify-center rounded-[10px] border border-slate-200 bg-white px-5 text-[14px] font-medium text-slate-700 transition hover:border-teal-300 hover:text-teal-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
             >
               Login
             </Link>
@@ -204,7 +217,7 @@ export default function Landing() {
           />
           <div
             aria-hidden="true"
-            className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,#ffffff_0%,#fbfdff_58%,rgba(239,249,255,.88)_100%)]"
+            className="absolute inset-0 -z-10 bg-[linear-gradient(180deg,#ffffff_0%,#fbfdff_58%,rgba(239,249,255,.88)_100%)] dark:bg-[linear-gradient(180deg,rgba(7,27,34,.95)_0%,rgba(15,23,42,.86)_58%,rgba(15,23,42,.58)_100%)]"
           />
           <div
             aria-hidden="true"
@@ -216,7 +229,7 @@ export default function Landing() {
             transition={{ duration: 0.8 }}
             className="absolute inset-x-5 top-5 z-10 mx-auto max-w-3xl text-center sm:top-8"
           >
-            <span className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white/70 px-3 py-1.5 text-xs text-teal-700 shadow-sm backdrop-blur">
+            <span className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-white/70 px-3 py-1.5 text-xs text-teal-700 shadow-sm backdrop-blur dark:border-teal-400/30 dark:bg-slate-950/65 dark:text-teal-200">
               <Sparkles size={14} />
               The modern internship learning platform
             </span>
@@ -227,7 +240,7 @@ export default function Landing() {
                 Build with proof.
               </span>
             </h1>
-            <p className="mx-auto mt-3 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
+            <p className="mx-auto mt-3 max-w-2xl text-base leading-7 text-slate-600 dark:text-slate-300 sm:text-lg">
               Structured learning tracks, real-world projects and verified
               milestones - designed to turn potential into professional
               momentum.
@@ -241,7 +254,7 @@ export default function Landing() {
               </Link>
               <Link
                 to="/contact"
-                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-6 py-3.5 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur transition hover:border-teal-200"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/70 px-6 py-3.5 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur transition hover:border-teal-200 dark:border-slate-600 dark:bg-slate-950/65 dark:text-slate-100"
               >
                 <PlayCircle size={17} />
                 Talk to our team
@@ -345,7 +358,7 @@ export default function Landing() {
         </section>
         <section
           id="journey"
-          className="relative overflow-hidden border-y border-teal-100 bg-[radial-gradient(circle_at_12%_22%,rgba(45,212,191,.18),transparent_24%),radial-gradient(circle_at_86%_28%,rgba(96,165,250,.18),transparent_25%),linear-gradient(135deg,#f0fdfa_0%,#f8fbff_48%,#f7f3ff_100%)]"
+          className="relative overflow-hidden border-y border-teal-100 bg-[radial-gradient(circle_at_12%_22%,rgba(45,212,191,.18),transparent_24%),radial-gradient(circle_at_86%_28%,rgba(96,165,250,.18),transparent_25%),linear-gradient(135deg,#f0fdfa_0%,#f8fbff_48%,#f7f3ff_100%)] dark:border-slate-800 dark:bg-[radial-gradient(circle_at_12%_22%,rgba(20,184,166,.16),transparent_24%),radial-gradient(circle_at_86%_28%,rgba(99,102,241,.15),transparent_25%),linear-gradient(135deg,#0b1f27_0%,#111827_48%,#19142b_100%)]"
         >
           <div className="relative mx-auto max-w-7xl px-5 py-20 lg:px-8">
             <p className="text-center text-xs font-bold tracking-[.22em] text-violet-600">
@@ -387,7 +400,7 @@ export default function Landing() {
             <h2 className="mt-4 text-4xl font-semibold tracking-[-.045em]">
               An experience as serious as your ambition.
             </h2>
-            <p className="mt-5 leading-7 text-slate-600">
+            <p className="mt-5 leading-7 text-slate-600 dark:text-slate-300">
               Show up consistently, stay accountable and leave with work you can
               confidently share.
             </p>
@@ -401,11 +414,11 @@ export default function Landing() {
             ].map(([x, I, cardTone, iconTone]) => (
               <div
                 key={x}
-                className={`rounded-3xl border p-6 shadow-[0_12px_30px_rgba(15,23,42,.06)] transition hover:-translate-y-1 hover:shadow-[0_18px_38px_rgba(15,23,42,.10)] ${cardTone}`}
+                className={`rounded-3xl border p-6 shadow-[0_12px_30px_rgba(15,23,42,.06)] transition hover:-translate-y-1 hover:shadow-[0_18px_38px_rgba(15,23,42,.10)] dark:border-slate-700 dark:bg-slate-900/85 dark:shadow-none ${cardTone}`}
               >
                 <I className={iconTone} />
-                <h3 className="mt-5 font-bold">{x}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-500">
+                <h3 className="mt-5 font-bold dark:text-white">{x}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-300">
                   Practical tools built around learner outcomes.
                 </p>
               </div>
@@ -431,14 +444,14 @@ export default function Landing() {
           </div>
         </section>
       </main>
-      <footer className="relative z-10 border-t border-teal-100 bg-[linear-gradient(120deg,#ffffff_0%,#f4fffc_52%,#f6f5ff_100%)] text-slate-800">
+      <footer className="relative z-10 border-t border-teal-100 bg-[linear-gradient(120deg,#ffffff_0%,#f4fffc_52%,#f6f5ff_100%)] text-slate-800 dark:border-slate-800 dark:bg-[linear-gradient(120deg,#071b22_0%,#101827_52%,#18132c_100%)] dark:text-slate-100">
         <div className="mx-auto grid max-w-7xl gap-10 px-5 py-12 lg:grid-cols-[1.2fr_.9fr_.9fr] lg:px-8">
           <div>
             <div className="flex gap-3">
               <img src={logo} className="h-11 w-11 rounded-xl" />
               <b className="pt-3 text-sm tracking-[.2em]">APARAITECH</b>
             </div>
-            <p className="mt-5 max-w-sm text-sm leading-6 text-slate-600">
+            <p className="mt-5 max-w-sm text-sm leading-6 text-slate-600 dark:text-slate-300">
               A focused ecosystem for learners who want practical skills and
               professional confidence.
             </p>
@@ -449,7 +462,7 @@ export default function Landing() {
                   href={h}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 shadow-sm outline-none transition hover:-translate-y-0.5 hover:border-teal-300 hover:text-teal-600 hover:shadow-md focus-visible:ring-2 focus-visible:ring-teal-300"
+                  className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 shadow-sm outline-none transition hover:-translate-y-0.5 hover:border-teal-300 hover:text-teal-600 hover:shadow-md focus-visible:ring-2 focus-visible:ring-teal-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
                 >
                   <I size={17} />
                 </a>
@@ -458,7 +471,7 @@ export default function Landing() {
           </div>
           <div>
             <h3 className="font-bold">Contact us</h3>
-            <div className="mt-5 space-y-4 text-sm text-slate-600">
+            <div className="mt-5 space-y-4 text-sm text-slate-600 dark:text-slate-300">
               <a href="tel:+916364326342" className="flex gap-3">
                 <Phone size={16} className="text-violet-300" />
                 +91 63643 26342
@@ -483,12 +496,12 @@ export default function Landing() {
           </div>
           <div>
             <h3 className="font-bold">Stay in the loop</h3>
-            <p className="mt-4 text-sm leading-6 text-slate-600">
+            <p className="mt-4 text-sm leading-6 text-slate-600 dark:text-slate-300">
               New tracks and useful opportunities, sent when useful.
             </p>
             <form
               onSubmit={subscribe}
-              className="mt-5 flex rounded-2xl border border-teal-100 bg-white p-1.5 shadow-[0_10px_24px_rgba(15,118,110,.08)]"
+              className="mt-5 flex rounded-2xl border border-teal-100 bg-white p-1.5 shadow-[0_10px_24px_rgba(15,118,110,.08)] dark:border-slate-700 dark:bg-slate-900"
             >
               <input
                 type="email"
@@ -507,7 +520,7 @@ export default function Landing() {
             </form>
           </div>
         </div>
-        <div className="border-t border-teal-100 px-5 py-5 text-center text-xs text-slate-500">
+        <div className="border-t border-teal-100 px-5 py-5 text-center text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
           © {new Date().getFullYear()} Aparaitech. Built for ambitious learners.
         </div>
       </footer>
