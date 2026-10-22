@@ -318,17 +318,36 @@ export default function Landing() {
               </div>
             </div>
           </motion.div>
+          <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 z-0 hidden h-[420px] overflow-hidden lg:block">
+            <img
+              src="/hero-library.png"
+              alt=""
+              className="absolute bottom-8 -left-8 w-[430px] drop-shadow-[0_25px_24px_rgba(14,116,144,.14)] xl:bottom-10 xl:w-[510px]"
+            />
+            <div className="absolute bottom-[-55px] left-1/2 h-[365px] w-[540px] -translate-x-1/2 overflow-hidden xl:h-[400px] xl:w-[620px]">
+              <img
+                src="/learning-campus-hero.png"
+                alt=""
+                className="absolute left-1/2 top-[-185px] w-[1080px] max-w-none -translate-x-1/2 xl:top-[-205px] xl:w-[1210px]"
+              />
+            </div>
+            <img
+              src="/hero-office.png"
+              alt=""
+              className="absolute bottom-8 -right-8 w-[430px] drop-shadow-[0_25px_24px_rgba(14,116,144,.14)] xl:bottom-10 xl:w-[510px]"
+            />
+          </div>
           <img
             src="/learning-campus-hero.png"
             alt="Aparaitech collaborative learning campus"
-            className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover object-center"
+            className="pointer-events-none absolute inset-0 z-0 h-full w-full object-cover object-center lg:hidden"
           />
         </section>
         <section
           id="journey"
-          className="border-y border-slate-200/80 bg-white/55"
+          className="relative overflow-hidden border-y border-teal-100 bg-[radial-gradient(circle_at_12%_22%,rgba(45,212,191,.18),transparent_24%),radial-gradient(circle_at_86%_28%,rgba(96,165,250,.18),transparent_25%),linear-gradient(135deg,#f0fdfa_0%,#f8fbff_48%,#f7f3ff_100%)]"
         >
-          <div className="mx-auto max-w-7xl px-5 py-20 lg:px-8">
+          <div className="relative mx-auto max-w-7xl px-5 py-20 lg:px-8">
             <p className="text-center text-xs font-bold tracking-[.22em] text-violet-600">
               A CLEARER PATH FORWARD
             </p>
@@ -375,16 +394,16 @@ export default function Landing() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             {[
-              ["Clear next actions", CheckCircle2],
-              ["Skill signals", Sparkles],
-              ["Mentored collaboration", Users],
-              ["Career-ready milestones", Award],
-            ].map(([x, I]) => (
+              ["Clear next actions", CheckCircle2, "border-emerald-100 bg-[linear-gradient(135deg,#ffffff_0%,#f0fdf4_100%)]", "text-emerald-600"],
+              ["Skill signals", Sparkles, "border-amber-100 bg-[linear-gradient(135deg,#ffffff_0%,#fffbeb_100%)]", "text-amber-600"],
+              ["Mentored collaboration", Users, "border-violet-100 bg-[linear-gradient(135deg,#ffffff_0%,#f5f3ff_100%)]", "text-violet-600"],
+              ["Career-ready milestones", Award, "border-rose-100 bg-[linear-gradient(135deg,#ffffff_0%,#fff1f2_100%)]", "text-rose-600"],
+            ].map(([x, I, cardTone, iconTone]) => (
               <div
                 key={x}
-                className="rounded-3xl border border-white/90 bg-white/75 p-6 shadow-sm"
+                className={`rounded-3xl border p-6 shadow-[0_12px_30px_rgba(15,23,42,.06)] transition hover:-translate-y-1 hover:shadow-[0_18px_38px_rgba(15,23,42,.10)] ${cardTone}`}
               >
-                <I className="text-teal-600" />
+                <I className={iconTone} />
                 <h3 className="mt-5 font-bold">{x}</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-500">
                   Practical tools built around learner outcomes.
@@ -394,12 +413,12 @@ export default function Landing() {
           </div>
         </section>
         <section className="mx-auto max-w-7xl px-5 pb-24 lg:px-8">
-          <div className="rounded-[2rem] bg-gradient-to-r from-[#281259] via-[#151c56] to-[#0b5068] p-10">
-            <p className="text-xs font-bold tracking-[.2em] text-violet-200">
+          <div className="rounded-[2rem] bg-gradient-to-r from-[#14532d] via-[#0f766e] to-[#0f766e] p-10 text-white shadow-[0_18px_45px_rgba(15,118,110,.20)]">
+            <p className="text-xs font-bold tracking-[.2em] text-emerald-100">
               READY FOR YOUR NEXT CHAPTER?
             </p>
             <div className="mt-4 flex flex-wrap items-end justify-between gap-5">
-              <h2 className="max-w-xl text-3xl font-semibold">
+              <h2 className="max-w-xl text-3xl font-semibold text-white">
                 Choose a track. Build something real. Let your work speak.
               </h2>
               <Link
@@ -412,14 +431,14 @@ export default function Landing() {
           </div>
         </section>
       </main>
-      <footer className="relative z-10 border-t border-slate-200 bg-white/80 text-slate-800 backdrop-blur">
-        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-14 lg:grid-cols-[1.2fr_.9fr_.9fr] lg:px-8">
+      <footer className="relative z-10 border-t border-teal-100 bg-[linear-gradient(120deg,#ffffff_0%,#f4fffc_52%,#f6f5ff_100%)] text-slate-800">
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 py-12 lg:grid-cols-[1.2fr_.9fr_.9fr] lg:px-8">
           <div>
             <div className="flex gap-3">
               <img src={logo} className="h-11 w-11 rounded-xl" />
               <b className="pt-3 text-sm tracking-[.2em]">APARAITECH</b>
             </div>
-            <p className="mt-5 max-w-sm text-sm leading-6 text-slate-500">
+            <p className="mt-5 max-w-sm text-sm leading-6 text-slate-600">
               A focused ecosystem for learners who want practical skills and
               professional confidence.
             </p>
@@ -430,7 +449,7 @@ export default function Landing() {
                   href={h}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 transition hover:border-teal-200 hover:text-teal-600"
+                  className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-600 shadow-sm outline-none transition hover:-translate-y-0.5 hover:border-teal-300 hover:text-teal-600 hover:shadow-md focus-visible:ring-2 focus-visible:ring-teal-300"
                 >
                   <I size={17} />
                 </a>
@@ -439,7 +458,7 @@ export default function Landing() {
           </div>
           <div>
             <h3 className="font-bold">Contact us</h3>
-            <div className="mt-5 space-y-4 text-sm text-slate-500">
+            <div className="mt-5 space-y-4 text-sm text-slate-600">
               <a href="tel:+916364326342" className="flex gap-3">
                 <Phone size={16} className="text-violet-300" />
                 +91 63643 26342
@@ -464,12 +483,12 @@ export default function Landing() {
           </div>
           <div>
             <h3 className="font-bold">Stay in the loop</h3>
-            <p className="mt-4 text-sm leading-6 text-slate-400">
+            <p className="mt-4 text-sm leading-6 text-slate-600">
               New tracks and useful opportunities, sent when useful.
             </p>
             <form
               onSubmit={subscribe}
-              className="mt-5 flex rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm"
+              className="mt-5 flex rounded-2xl border border-teal-100 bg-white p-1.5 shadow-[0_10px_24px_rgba(15,118,110,.08)]"
             >
               <input
                 type="email"
@@ -481,14 +500,14 @@ export default function Landing() {
               />
               <button
                 disabled={sending}
-                className="rounded-xl bg-violet-500 p-2.5"
+                className="rounded-xl bg-gradient-to-br from-teal-500 to-violet-600 p-2.5 text-white shadow-sm transition hover:scale-105"
               >
                 <Send size={16} />
               </button>
             </form>
           </div>
         </div>
-        <div className="border-t border-slate-200 px-5 py-5 text-center text-xs text-slate-500">
+        <div className="border-t border-teal-100 px-5 py-5 text-center text-xs text-slate-500">
           © {new Date().getFullYear()} Aparaitech. Built for ambitious learners.
         </div>
       </footer>
@@ -504,13 +523,13 @@ const Metric = ({ n, t }) => (
 const Feature = ({ n, icon: I, title, text }) => (
   <motion.article
     whileHover={{ y: -6 }}
-    className="rounded-3xl border border-white bg-white/80 p-6 shadow-sm backdrop-blur transition-shadow hover:shadow-lg"
+    className={`rounded-3xl border p-6 shadow-[0_18px_40px_rgba(15,23,42,.08)] backdrop-blur transition-all hover:shadow-[0_24px_48px_rgba(14,116,144,.16)] ${n === "01" ? "border-teal-100 bg-gradient-to-br from-white via-teal-50 to-cyan-100/70" : n === "02" ? "border-sky-100 bg-gradient-to-br from-white via-sky-50 to-indigo-100/70" : "border-violet-100 bg-gradient-to-br from-white via-violet-50 to-fuchsia-100/60"}`}
   >
     <div className="flex justify-between">
-      <div className="rounded-2xl bg-violet-100 p-3 text-violet-700">
+      <div className={`rounded-2xl p-3 ${n === "01" ? "bg-teal-600 text-white shadow-lg shadow-teal-200" : n === "02" ? "bg-sky-600 text-white shadow-lg shadow-sky-200" : "bg-violet-600 text-white shadow-lg shadow-violet-200"}`}>
         <I size={22} />
       </div>
-      <span className="text-xs text-slate-600">{n}</span>
+      <span className={`text-xs font-semibold ${n === "01" ? "text-teal-600" : n === "02" ? "text-sky-600" : "text-violet-600"}`}>{n}</span>
     </div>
     <h3 className="mt-8 text-lg font-bold">{title}</h3>
     <p className="mt-3 text-sm leading-6 text-slate-500">{text}</p>
